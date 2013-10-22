@@ -1,0 +1,154 @@
+#!/bin/bash
+
+# Licence :
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+# 
+
+# About it:
+#
+# Ogg to MP3 ;)
+# From time to time you can find not so smart media devices (like Skoda cards)
+# are not able to play ogg files. For that case you can use this script.
+# You need to have installed the ffmpeg codec in your system.
+#
+# Martin Caj <mcaj@suse.cz>
+#
+
+# version 0.2
+
+function usage() {
+        echo
+	        echo "This script will convert *.ogg files into *.mp3 files" 
+		echo "You need to have ffmpeg codec installed into your system."
+		echo "Usage:"
+		echo "ogg-to-mp3"
+		echo "ogg-to-mp3 \$directory-with-ogg-files"
+		echo  
+		exit 0
+}	
+
+function run() {
+		
+		count=0
+		for numbers in *.ogg; 
+			do 
+				let count=$count+1
+				echo "file is $numbers counter is $count."
+			done
+		mkdir mp3
+		dbusRef=$(kdialog --progressbar "Creating mp3 now, please wait a while." $count)
+		#reset counter now
+		count=0
+		for name in *.ogg; do 
+		let count=$count+1
+		qdbus $dbusRef setLabelText "In the "$oggdir"/mp3/ are now store fallowing files:"
+		qdbus $dbusRef Set "" value $count
+			kdialog --title "ogg-to-mp: 3" --passivepopup \
+	       		"Curently working on file : '$name' " 5
+			ffmpeg -i "$name" -ab 128k -map_metadata 0:s:0 "${name/.ogg/.mp3}"
+		done
+		mv *.mp3 "$oggdir"/mp3/ 
+		qdbus $dbusRef close
+		kdialog --msgbox "The conversation is done.\n Check your files in $oggdir/mp3/ \n$(ls $oggdir/mp3/*.mp3) \n Have nice time :)"
+}
+
+kdialog --title "ogg-to-mp3: MP3 to OGG " --yesno "This script will convert *.ogg files into *.mp3 files \n  \
+You need to have ffmpeg codec installed into your system. \n \
+Do you want to continue now?" 
+
+start=$?
+
+if [ "$start" = 1 ]; then
+	 echo exit it now !
+	 exit 0
+fi
+
+
+if [ ! "$1" ] ; then
+	    oggdir=$(kdialog --getexistingdirectory ~)
+else
+	oggdir="$1"
+fi
+
+if [ "$2" ] ; then
+	    usage 1
+fi
+
+
+if [ ! -x /usr/bin/ffmpeg ] ; then
+
+kdialog --sorry  "ogg-to-mp3: the codec ffmpeg is missing ! \n Please install it into you system first."
+	exit 1
+fi
+
+checkogg="$(ls $oggdir/*.ogg)"
+
+if [ ! "$checkogg" ] ; then
+
+	kdialog --error  "ogg-to-mp3 error: There aren't any ogg files in "$oggdir". \n Please check it via 'ls "$oggdir"' and \n run it again with correct path"
+	exit 1
+
+fi
+
+cd "$oggdir"
+
+if [ "$(ls $oggdir/mp3/*.mp3)" ] ; then
+
+	kdialog --title "ogg-to-mp3 warning: Old MP3." --yesnocancel "Old MP3 files alredy exist.\n Do you want to condinue and delete old files ?" 
+	oldmp3=$?
+
+	if [ "$oldmp3" = 0 ]; then
+		rm "$oggdir"/mp3/*.mp3	
+		run
+		exit 0
+	elif [ "$oldmp3" = 1 ]; then
+		echo "Exiting the sctipt"
+		exit 0
+	elif [ "$oldmp3" = 2 ]; then
+		echo "Canceling it now !"
+		exit 1
+	else
+		echo "ERROR"
+		exit 3
+	fi
+else
+	run
+	exit 0
+fi
+#cd "$oggdir"
+
+
+# working text mode"
+#echo "OGG files are:"
+#echo "---------------"
+#ls *.ogg
+
+#echo "Creating mp3 now, please wait a while."
+
+#mkdir mp3 
+
+#for name in *.ogg; do ffmpeg -i "$name" -ab 128k -map_metadata 0:s:0 "${name/.ogg/.mp3}"
+#done
+
+#mv *.mp3 "$oggdir"/mp3/
+
+#echo "in "$oggdir"/mp3/ are now store fallowing files:"
+#echo "----------------------------------------------"
+
+#ls $oggdir/mp3/*.mp3
+
+#echo "End ;)"
+
+exit 0
