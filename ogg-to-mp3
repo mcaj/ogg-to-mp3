@@ -93,7 +93,7 @@ kdialog --sorry  "ogg-to-mp3: the codec ffmpeg is missing ! \n Please install it
 	exit 1
 fi
 
-checkogg="$(ls $oggdir/*.ogg)"
+checkogg="$(ls "$oggdir"/*.ogg)"
 
 if [ ! "$checkogg" ] ; then
 
@@ -104,7 +104,7 @@ fi
 
 cd "$oggdir"
 
-if [ "$(ls $oggdir/mp3/*.mp3)" ] ; then
+if [ "$(ls "$oggdir"/mp3/*.mp3)" ] ; then
 
 	kdialog --title "ogg-to-mp3 warning: Old MP3." --yesnocancel "Old MP3 files alredy exist.\n Do you want to condinue and delete old files ?" 
 	oldmp3=$?
